@@ -1,5 +1,6 @@
 <template>
     <div>
+        <loading :active.sync="isLoading"></loading>
         <div class="text-right mt-4">
             <button class="btn btn-primary" @click="openModal(true)">建立新的產品</button>
         </div>
@@ -60,7 +61,7 @@
                             <i class="fas fa-spinner fa-spin"></i>
                         </label>
                         <input type="file" id="customFile" class="form-control"
-                            ref="files">
+                            ref="files" @change="uploadFile">
                         </div>
                         <img img="https://images.unsplash.com/photo-1483985988355-763728e1935b?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=828346ed697837ce808cae68d3ddc3cf&auto=format&fit=crop&w=1350&q=80"
                         class="img-fluid" src="tempProduct.imageUrl" alt="">
@@ -167,6 +168,7 @@ export default {
             products: [],
             tempProduct: {},
             isNew: false,
+            isLoading: false,
         }
     },
     methods: {
@@ -174,8 +176,10 @@ export default {
             const api = `${process.env.APIPATH}/api/${process.env.CUSTOMPATH}/products`;
             const vm = this;
             console.log(process.env.APIPATH, process.env.CUSTOMPATH);
+            vm.isLoading = true;
             this.$http.get(api).then((res) => {
                 console.log(res.data);
+                vm.isLoading = false;
                 vm.products = res.data.products
 
             })
@@ -224,6 +228,27 @@ export default {
             vm.$http.delete(api).then((res) => {
                 $('#delProductModal').modal('hide');
                 vm.getProducts();
+            })
+        },
+        uploadFile() {
+            console.log(this);
+            const uploadedFile = this.$refs.files.files[0];
+            const vm = this;
+            const formData = new FormData();
+            formData.append('file-to-upload', uploadedFile);
+            console.log('formData:', formData);
+            const url = `${process.env.APIPATH}/api/${process.env.CUSTOMPATH}/admin/upload`;
+            this.$http.post(url, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            }).then((res) => {
+                console.log(res.data);
+                if (res.data.success) {
+                    // vm.tempProduct.imageUrl = res.data.imageUrl;
+                    // console.log(vm.tempProduct);
+                    vm.$set(vm.tempProduct, 'imageUrl', res.data.imageUrl) ///用set做雙相綁定
+                }
             })
         }
     },
